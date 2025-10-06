@@ -1,0 +1,16 @@
+import java.io.*;
+import java.util.*;
+
+public class Solution {
+
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int side = sc.nextInt();
+        int no = sc.nextInt();
+        int c = (int)Math.sqrt(no);
+        int d = c * side;
+        side =d*d;
+        System.out.print(side);
+        /* Enter your code here. Read input from STDIN. Print output to STDOUT. Your class should be named Solution. */
+    }
+}
