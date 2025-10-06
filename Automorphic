@@ -1,0 +1,27 @@
+import java.io.*;
+import java.util.*;
+public class Solution{
+    static boolean a(int n){
+        int s = n*n;
+        while(n != 0){
+            if(n%10 != s%10){
+                return false;
+            }
+                n /=10;
+                s /=10;
+            }
+            return true;
+    }
+    public static void main(String[] args) {
+        Scanner sc = new Scanner(System.in);
+        int n = sc.nextInt();
+       if(a(n)) {
+           System.out.println("YES");
+       }
+        else
+        {
+            System.out.println("NO");
+        }
+        
+    }   
+}
