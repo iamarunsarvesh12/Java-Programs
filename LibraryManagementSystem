@@ -1,0 +1,610 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.*;
+import java.io.*;
+import java.util.*;
+
+class User {
+    String username, password;
+    boolean isAdmin;
+    int borrowedCount;
+
+    User(String u, String p, boolean a, int bc) {
+        username = u;
+        password = p;
+        isAdmin = a;
+        borrowedCount = bc;
+    }
+}
+
+class Book {
+    int id;
+    String title, author;
+    boolean available;
+
+    Book(int id, String t, String a, boolean av) {
+        this.id = id;
+        this.title = t;
+        this.author = a;
+        this.available = av;
+    }
+}
+
+class Transaction {
+    int bookId;
+    String username;
+    boolean returned;
+
+    Transaction(int b, String u, boolean r) {
+        bookId = b;
+        username = u;
+        returned = r;
+    }
+}
+
+public class LibraryGUI {
+
+    JFrame frame;
+
+    HashMap<String, User> users = new HashMap<>();
+    HashMap<Integer, Book> books = new HashMap<>();
+    ArrayList<Transaction> trans = new ArrayList<>();
+
+    int bookCounter = 1;
+
+    final String USERS_CSV = "users.csv";
+    final String BOOKS_CSV = "books.csv";
+    final String TRANS_CSV = "transactions.csv";
+
+    User currentUser = null;
+
+    Color purple = new Color(102, 51, 153);
+    Color white = Color.WHITE;
+
+    // ---------------------------------------
+    // MAIN APPLICATION START
+    // ---------------------------------------
+    public LibraryGUI() {
+        loadData();
+
+        if (!users.containsKey("admin"))
+            users.put("admin", new User("admin", "admin", true, 0));
+
+        showMainMenu();
+    }
+
+    // ---------------------------------------
+    // MAIN MENU
+    // ---------------------------------------
+    void showMainMenu() {
+        frame = new JFrame("Library System");
+        frame.setSize(350, 350);
+        frame.setLayout(new GridLayout(5, 1));
+        frame.getContentPane().setBackground(purple);
+
+        JLabel title = new JLabel("LIBRARY SYSTEM", SwingConstants.CENTER);
+        title.setFont(new Font("Arial", Font.BOLD, 20));
+        title.setForeground(white);
+
+        JButton login = new JButton("Login");
+        JButton register = new JButton("Register");
+        JButton info = new JButton("Instructions");
+        JButton exit = new JButton("Exit");
+
+        JButton[] buttons = {login, register, info, exit};
+        for (JButton b : buttons) {
+            b.setBackground(white);
+            b.setForeground(purple);
+            b.setFocusPainted(false);
+        }
+
+        login.addActionListener(e -> {
+            frame.dispose();
+            showLogin();
+        });
+        register.addActionListener(e -> {
+            frame.dispose();
+            showRegister();
+        });
+        info.addActionListener(e -> showInstructions());
+        exit.addActionListener(e -> {
+            saveData();
+            System.exit(0);
+        });
+
+        frame.add(title);
+        frame.add(login);
+        frame.add(register);
+        frame.add(info);
+        frame.add(exit);
+
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // INSTRUCTIONS PAGE
+    // ---------------------------------------
+    void showInstructions() {
+        JFrame f = new JFrame("Instructions");
+        f.setSize(400, 400);
+        f.getContentPane().setBackground(purple);
+
+        JTextArea area = new JTextArea();
+        area.setEditable(false);
+        area.setBackground(white);
+        area.setForeground(purple);
+        area.setText(
+        );
+
+        f.add(new JScrollPane(area));
+        f.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // LOGIN
+    // ---------------------------------------
+    void showLogin() {
+        frame = new JFrame("Login");
+        frame.setSize(350, 250);
+        frame.setLayout(new GridLayout(4, 2));
+        frame.getContentPane().setBackground(purple);
+
+        JTextField uname = new JTextField();
+        JTextField pass = new JPasswordField();
+
+        uname.setBackground(white);
+        uname.setForeground(purple);
+        pass.setBackground(white);
+        pass.setForeground(purple);
+
+        JLabel userLabel = new JLabel("Username:");
+        JLabel passLabel = new JLabel("Password:");
+
+        userLabel.setForeground(white);
+        passLabel.setForeground(white);
+
+        frame.add(userLabel);
+        frame.add(uname);
+
+        frame.add(passLabel);
+        frame.add(pass);
+
+        JButton login = new JButton("Login");
+        JButton back = new JButton("Back");
+
+        JButton[] buttons = {login, back};
+        for (JButton b : buttons) {
+            b.setBackground(white);
+            b.setForeground(purple);
+            b.setFocusPainted(false);
+        }
+
+        login.addActionListener(e -> {
+            String u = uname.getText();
+            String p = new String(((JPasswordField) pass).getPassword());
+
+            if (!users.containsKey(u)) {
+                JOptionPane.showMessageDialog(frame, "User not found!");
+                return;
+            }
+
+            if (!users.get(u).password.equals(p)) {
+                JOptionPane.showMessageDialog(frame, "Incorrect password!");
+                return;
+            }
+
+            currentUser = users.get(u);
+            frame.dispose();
+
+            if (currentUser.isAdmin)
+                showAdminMenu();
+            else
+                showUserMenu();
+        });
+
+        back.addActionListener(e -> {
+            frame.dispose();
+            showMainMenu();
+        });
+
+        frame.add(login);
+        frame.add(back);
+        frame.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // REGISTER
+    // ---------------------------------------
+    void showRegister() {
+        frame = new JFrame("Register");
+        frame.setSize(350, 250);
+        frame.setLayout(new GridLayout(4, 2));
+        frame.getContentPane().setBackground(purple);
+
+        JTextField uname = new JTextField();
+        JTextField pass = new JPasswordField();
+
+        uname.setBackground(white);
+        uname.setForeground(purple);
+        pass.setBackground(white);
+        pass.setForeground(purple);
+
+        JLabel userLabel = new JLabel("Username:");
+        JLabel passLabel = new JLabel("Password:");
+
+        userLabel.setForeground(white);
+        passLabel.setForeground(white);
+
+        frame.add(userLabel);
+        frame.add(uname);
+
+        frame.add(passLabel);
+        frame.add(pass);
+
+        JButton reg = new JButton("Register");
+        JButton back = new JButton("Back");
+
+        JButton[] buttons = {reg, back};
+        for (JButton b : buttons) {
+            b.setBackground(white);
+            b.setForeground(purple);
+            b.setFocusPainted(false);
+        }
+
+        reg.addActionListener(e -> {
+            String u = uname.getText();
+            String p = new String(((JPasswordField) pass).getPassword());
+
+            if (users.containsKey(u)) {
+                JOptionPane.showMessageDialog(frame, "Username already exists!");
+                return;
+            }
+
+            users.put(u, new User(u, p, false, 0));
+            saveUsers();
+            JOptionPane.showMessageDialog(frame, "Registered Successfully!");
+        });
+
+        back.addActionListener(e -> {
+            frame.dispose();
+            showMainMenu();
+        });
+
+        frame.add(reg);
+        frame.add(back);
+
+        frame.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // ADMIN MENU
+    // ---------------------------------------
+    void showAdminMenu() {
+        frame = new JFrame("Admin Menu");
+        frame.setSize(300, 350);
+        frame.setLayout(new GridLayout(6, 1));
+        frame.getContentPane().setBackground(purple);
+
+        JButton addBook = new JButton("Add Book");
+        JButton viewBooks = new JButton("View Books");
+        JButton deleteBook = new JButton("Delete Book");
+        JButton viewUsers = new JButton("View Users");
+        JButton logout = new JButton("Logout");
+
+        JButton[] buttons = {addBook, viewBooks, deleteBook, viewUsers, logout};
+        for (JButton b : buttons) {
+            b.setBackground(white);
+            b.setForeground(purple);
+            b.setFocusPainted(false);
+        }
+
+        addBook.addActionListener(e -> showAddBook());
+        viewBooks.addActionListener(e -> showBookList());
+        deleteBook.addActionListener(e -> showDeleteBook());
+        viewUsers.addActionListener(e -> showUserList());
+        logout.addActionListener(e -> {
+            saveData();
+            frame.dispose();
+            currentUser = null;
+            showMainMenu();
+        });
+
+        JLabel label = new JLabel("ADMIN MENU", SwingConstants.CENTER);
+        label.setForeground(white);
+        frame.add(label);
+        frame.add(addBook);
+        frame.add(viewBooks);
+        frame.add(deleteBook);
+        frame.add(viewUsers);
+        frame.add(logout);
+
+        frame.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // USER MENU
+    // ---------------------------------------
+    void showUserMenu() {
+        frame = new JFrame("User Menu");
+        frame.setSize(300, 300);
+        frame.setLayout(new GridLayout(5, 1));
+        frame.getContentPane().setBackground(purple);
+
+        JButton viewBooks = new JButton("View Books");
+        JButton borrow = new JButton("Borrow Book");
+        JButton returnBook = new JButton("Return Book");
+        JButton logout = new JButton("Logout");
+
+        JButton[] buttons = {viewBooks, borrow, returnBook, logout};
+        for (JButton b : buttons) {
+            b.setBackground(white);
+            b.setForeground(purple);
+            b.setFocusPainted(false);
+        }
+
+        viewBooks.addActionListener(e -> showBookList());
+        borrow.addActionListener(e -> showBorrowBook());
+        returnBook.addActionListener(e -> showReturnBook());
+        logout.addActionListener(e -> {
+            saveData();
+            frame.dispose();
+            currentUser = null;
+            showMainMenu();
+        });
+
+        JLabel label = new JLabel("USER MENU", SwingConstants.CENTER);
+        label.setForeground(white);
+
+        frame.add(label);
+        frame.add(viewBooks);
+        frame.add(borrow);
+        frame.add(returnBook);
+        frame.add(logout);
+
+        frame.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // ADD BOOK
+    // ---------------------------------------
+    void showAddBook() {
+        JFrame f = new JFrame("Add Book");
+        f.setSize(300, 200);
+        f.setLayout(new GridLayout(3, 2));
+        f.getContentPane().setBackground(purple);
+
+        JTextField title = new JTextField();
+        JTextField author = new JTextField();
+        title.setBackground(white);
+        title.setForeground(purple);
+        author.setBackground(white);
+        author.setForeground(purple);
+
+        JLabel titleLabel = new JLabel("Title:");
+        JLabel authorLabel = new JLabel("Author:");
+        titleLabel.setForeground(white);
+        authorLabel.setForeground(white);
+
+        f.add(titleLabel);
+        f.add(title);
+
+        f.add(authorLabel);
+        f.add(author);
+
+        JButton add = new JButton("Add");
+        add.setBackground(white);
+        add.setForeground(purple);
+        add.setFocusPainted(false);
+
+        add.addActionListener(e -> {
+            books.put(bookCounter, new Book(bookCounter, title.getText(), author.getText(), true));
+            JOptionPane.showMessageDialog(f, "Book Added (ID = " + bookCounter + ")");
+            bookCounter++;
+            saveBooks();
+        });
+
+        f.add(add);
+        f.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // VIEW BOOK LIST
+    // ---------------------------------------
+    void showBookList() {
+        JFrame f = new JFrame("Books");
+        f.setSize(400, 300);
+        f.getContentPane().setBackground(purple);
+
+        JTextArea area = new JTextArea();
+        area.setBackground(white);
+        area.setForeground(purple);
+        for (Book b : books.values()) {
+            area.append(
+                b.id + " | " + b.title + " | " + b.author +
+                " | " + (b.available ? "Available" : "Issued") + "\n"
+            );
+        }
+        area.setEditable(false);
+        f.add(new JScrollPane(area));
+        f.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // DELETE BOOK
+    // ---------------------------------------
+    void showDeleteBook() {
+        String idStr = JOptionPane.showInputDialog("Enter Book ID:");
+        if (idStr == null) return;
+
+        int id = Integer.parseInt(idStr);
+
+        if (books.remove(id) != null) {
+            JOptionPane.showMessageDialog(null, "Book Deleted");
+            saveBooks();
+        } else {
+            JOptionPane.showMessageDialog(null, "Book Not Found");
+        }
+    }
+
+    // ---------------------------------------
+    // VIEW USER LIST
+    // ---------------------------------------
+    void showUserList() {
+        JFrame f = new JFrame("Users");
+        f.setSize(400, 300);
+        f.getContentPane().setBackground(purple);
+
+        JTextArea area = new JTextArea();
+        area.setBackground(white);
+        area.setForeground(purple);
+
+        for (User u : users.values()) {
+            area.append(u.username + " | Admin: " + u.isAdmin + " | Borrowed: " + u.borrowedCount + "\n");
+        }
+
+        area.setEditable(false);
+        f.add(new JScrollPane(area));
+        f.setVisible(true);
+    }
+
+    // ---------------------------------------
+    // BORROW BOOK
+    // ---------------------------------------
+    void showBorrowBook() {
+        String idStr = JOptionPane.showInputDialog("Enter Book ID:");
+        if (idStr == null) return;
+
+        int id = Integer.parseInt(idStr);
+
+        if (!books.containsKey(id)) {
+            JOptionPane.showMessageDialog(null, "Book Not Found");
+            return;
+        }
+
+        Book b = books.get(id);
+
+        if (!b.available) {
+            JOptionPane.showMessageDialog(null, "Book Already Issued");
+            return;
+        }
+
+        b.available = false;
+        currentUser.borrowedCount++;
+        trans.add(new Transaction(id, currentUser.username, false));
+
+        saveBooks();
+        saveUsers();
+        saveTransactions();
+
+        JOptionPane.showMessageDialog(null, "Book Borrowed Successfully");
+    }
+
+    // ---------------------------------------
+    // RETURN BOOK
+    // ---------------------------------------
+    void showReturnBook() {
+        String idStr = JOptionPane.showInputDialog("Enter Book ID:");
+        if (idStr == null) return;
+
+        int id = Integer.parseInt(idStr);
+
+        if (!books.containsKey(id)) {
+            JOptionPane.showMessageDialog(null, "Book Not Found");
+            return;
+        }
+
+        for (Transaction t : trans) {
+            if (t.bookId == id && t.username.equals(currentUser.username) && !t.returned) {
+                t.returned = true;
+                books.get(id).available = true;
+                currentUser.borrowedCount--;
+
+                saveUsers();
+                saveBooks();
+                saveTransactions();
+
+                JOptionPane.showMessageDialog(null, "Book Returned Successfully");
+                return;
+            }
+        }
+
+        JOptionPane.showMessageDialog(null, "No Borrow Record Found");
+    }
+
+    // ---------------------------------------
+    // SAVE DATA TO CSV
+    // ---------------------------------------
+    void saveData() {
+        saveUsers();
+        saveBooks();
+        saveTransactions();
+    }
+
+    void saveUsers() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(USERS_CSV))) {
+            for (User u : users.values()) {
+                pw.println(u.username + "," + u.password + "," + u.isAdmin + "," + u.borrowedCount);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    void saveBooks() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(BOOKS_CSV))) {
+            for (Book b : books.values()) {
+                pw.println(b.id + "," + b.title + "," + b.author + "," + b.available);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    void saveTransactions() {
+        try (PrintWriter pw = new PrintWriter(new FileWriter(TRANS_CSV))) {
+            for (Transaction t : trans) {
+                pw.println(t.bookId + "," + t.username + "," + t.returned);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    // ---------------------------------------
+    // LOAD DATA FROM CSV
+    // ---------------------------------------
+    void loadData() {
+        loadUsers();
+        loadBooks();
+        loadTransactions();
+    }
+
+    void loadUsers() {
+        try (Scanner s = new Scanner(new File(USERS_CSV))) {
+            while (s.hasNextLine()) {
+                String[] a = s.nextLine().split(",");
+                users.put(a[0], new User(a[0], a[1], Boolean.parseBoolean(a[2]), Integer.parseInt(a[3])));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    void loadBooks() {
+        try (Scanner s = new Scanner(new File(BOOKS_CSV))) {
+            while (s.hasNextLine()) {
+                String[] a = s.nextLine().split(",");
+                int id = Integer.parseInt(a[0]);
+                Book b = new Book(id, a[1], a[2], Boolean.parseBoolean(a[3]));
+                books.put(id, b);
+                bookCounter = Math.max(bookCounter, id + 1);
+            }
+        } catch (Exception ignored) {}
+    }
+
+    void loadTransactions() {
+        try (Scanner s = new Scanner(new File(TRANS_CSV))) {
+            while (s.hasNextLine()) {
+                String[] a = s.nextLine().split(",");
+                trans.add(new Transaction(Integer.parseInt(a[0]), a[1], Boolean.parseBoolean(a[2])));
+            }
+        } catch (Exception ignored) {}
+    }
+
+    public static void main(String[] args) {
+        new LibraryGUI();
+    }
+}
